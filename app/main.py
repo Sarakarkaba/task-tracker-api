@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, status
 from dotenv import load_dotenv
 
 from app import storage
+from app.business_rules import validate_status_transition
 from app.models import TaskCreate, TaskPriority, TaskResponse, TaskStatus, TaskUpdate
 
 
@@ -56,6 +57,15 @@ def get_task(task_id: str) -> TaskResponse:
 
 @app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
 def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
+    if payload.status is not None:
+        existing = storage.get_task_by_id(task_id)
+        if existing is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Task with id {task_id} not found",
+            )
+        validate_status_transition(existing.status, payload.status)
+
     task = storage.update_task(task_id, payload)
     if task is None:
         raise HTTPException(
