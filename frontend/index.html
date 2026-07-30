@@ -56,6 +56,23 @@
       }
       .new-task-button:hover { transform: translateY(-2px); background: rgba(255,255,255,0.18); box-shadow: 0 8px 20px rgba(37,48,74,0.08); }
 
+      .overdue-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        align-self: flex-start;
+        padding: 0.55rem 0.8rem;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(255,255,255,0.12);
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .overdue-filter input { accent-color: var(--primary-600); }
+
       .board {
         display: grid;
         grid-template-columns: repeat(3, minmax(18rem, 1fr));
@@ -93,6 +110,7 @@
         border: none;
       }
       .task-card:hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(15,23,42,0.10); }
+      .task-card.is-overdue { border-left: 4px solid var(--danger); }
 
       .task-card[draggable="true"] { cursor: grab; }
       .task-card.is-dragging { opacity: 0.6; transform: scale(.995); }
@@ -102,6 +120,9 @@
       .task-card h3 { margin: 0; font-size: 1rem; color: var(--text); }
 
       .task-description { margin: 0.5rem 0 0.9rem; color: #5f687a; font-size: 0.92rem; line-height: 1.5; }
+
+      .due-date { margin: 0.5rem 0 0.75rem; color: var(--muted); font-size: 0.82rem; font-weight: 650; }
+      .due-date.is-overdue { color: #b91c1c; }
 
       .task-meta { display:flex; flex-wrap:wrap; align-items:center; gap:0.6rem; margin-bottom:0.6rem; }
 
@@ -170,6 +191,10 @@
       <button class="new-task-button" id="new-task-button" type="button">
         New Task
       </button>
+      <label class="overdue-filter">
+        <input id="overdue-filter" type="checkbox">
+        Show overdue only
+      </label>
     </header>
 
     <section
@@ -310,6 +335,11 @@
             <input id="task-assignee" name="assignee" type="text">
           </div>
 
+          <div class="form-field">
+            <label for="task-due-date">Due date (optional)</label>
+            <input id="task-due-date" name="dueDate" type="date">
+          </div>
+
           <p class="form-error" id="form-error" role="alert" hidden></p>
 
           <div class="form-actions">
@@ -321,7 +351,7 @@
     </div>
 
     <script>
-      const API_BASE_URL = window.location.origin;
+      const API_BASE_URL = "http://localhost:8000";
       const STATUSES = ["ToDo", "InProgress", "Done"];
       const PRIORITY_ORDER = { High: 0, Medium: 1, Low: 2 };
       const STATUS_LABELS = {
@@ -335,6 +365,7 @@
       const statusMessage = boardStatus.querySelector(".status-message");
       const retryButton = boardStatus.querySelector(".retry-button");
       const newTaskButton = document.querySelector("#new-task-button");
+      const overdueFilter = document.querySelector("#overdue-filter");
       const taskModal = document.querySelector("#task-modal");
       const taskModalTitle = document.querySelector("#task-modal-title");
       const taskForm = document.querySelector("#task-form");
@@ -343,6 +374,7 @@
       const statusInput = taskForm.elements.namedItem("status");
       const priorityInput = taskForm.elements.namedItem("priority");
       const assigneeInput = taskForm.elements.namedItem("assignee");
+      const dueDateInput = taskForm.elements.namedItem("dueDate");
       const taskIdInput = taskForm.elements.namedItem("taskId");
       const titleError = document.querySelector("#title-error");
       const formError = document.querySelector("#form-error");
@@ -375,11 +407,43 @@
         return placeholder;
       }
 
+      function getLocalDateString() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const day = String(today.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function isTaskOverdue(task) {
+        return Boolean(
+          task.due_date &&
+          task.due_date < getLocalDateString() &&
+          task.status !== "Done"
+        );
+      }
+
+      function formatDueDate(dueDate) {
+        const [year, month, day] = dueDate.split("-").map(Number);
+        const localDate = new Date(year, month - 1, day);
+
+        return new Intl.DateTimeFormat(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }).format(localDate);
+      }
+
       function createTaskCard(task) {
         const card = document.createElement("article");
         card.className = "task-card";
         card.dataset.taskId = String(task.id);
         card.draggable = true;
+        const overdue = isTaskOverdue(task);
+
+        if (overdue) {
+          card.classList.add("is-overdue");
+        }
 
         const title = document.createElement("h3");
         title.textContent = task.title;
@@ -390,6 +454,19 @@
           description.className = "task-description";
           description.textContent = task.description;
           card.append(description);
+        }
+
+        if (task.due_date) {
+          const dueDate = document.createElement("p");
+          dueDate.className = "due-date";
+
+          if (overdue) {
+            dueDate.classList.add("is-overdue");
+          }
+
+          dueDate.textContent =
+            `${overdue ? "Overdue - " : ""}Due ${formatDueDate(task.due_date)}`;
+          card.append(dueDate);
         }
 
         const meta = document.createElement("div");
@@ -419,8 +496,11 @@
         const groupedTasks = Object.fromEntries(
           STATUSES.map((status) => [status, []]),
         );
+        const visibleTasks = overdueFilter.checked
+          ? tasksToRender.filter(isTaskOverdue)
+          : tasksToRender;
 
-        tasksToRender.forEach((task) => {
+        visibleTasks.forEach((task) => {
           if (groupedTasks[task.status]) {
             groupedTasks[task.status].push(task);
           }
@@ -512,6 +592,7 @@
         statusInput.value = task ? task.status : "ToDo";
         priorityInput.value = task ? task.priority : "Medium";
         assigneeInput.value = task?.assignee || "";
+        dueDateInput.value = task?.due_date || "";
 
         taskModalTitle.textContent = task ? "Edit Task" : "New Task";
         saveButton.textContent = task ? "Save Changes" : "Create Task";
@@ -556,6 +637,7 @@
           status: statusInput.value,
           priority: priorityInput.value,
           assignee: assigneeInput.value.trim() || null,
+          due_date: dueDateInput.value || null,
         };
 
         if (isEditing) {
@@ -763,6 +845,10 @@
       titleInput.addEventListener("input", () => {
         titleError.textContent = "";
         titleInput.removeAttribute("aria-invalid");
+      });
+
+      overdueFilter.addEventListener("change", () => {
+        renderBoard(tasks);
       });
 
       async function fetchTasks() {
