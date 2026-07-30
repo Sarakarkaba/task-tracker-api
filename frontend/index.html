@@ -6,63 +6,61 @@
     <title>Task Tracker Kanban Board</title>
     <style>
       :root {
+        --bg: #f5f7fb;
+        --surface: #ffffff;
+        --muted: #6b7280;
+        --primary: #3b82f6;
+        --primary-600: #2563eb;
+        --accent: #6a82c4;
+        --danger: #ef4444;
+        --text: #0f172a;
+        --card-shadow: 0 6px 18px rgba(15,23,42,0.08);
+        --radius: 0.75rem;
+        --gap: 1rem;
         color-scheme: light;
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-          "Segoe UI", sans-serif;
-        color: #172033;
-        background: #f4f6fb;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, var(--bg) 0%, #eef2f7 100%);
+        color: var(--text);
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
 
-      body {
-        min-width: 320px;
-        min-height: 100vh;
-        margin: 0;
-      }
+      body { min-width: 320px; min-height: 100vh; margin: 0; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 
-      button {
-        font: inherit;
-      }
+      button { font: inherit; }
 
       .page-header {
         padding: 3rem clamp(1rem, 5vw, 4rem) 2rem;
-        color: #ffffff;
-        background: #25304a;
+        color: #fff;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        display:flex; flex-direction:column; gap:0.5rem;
+        box-shadow: 0 6px 20px rgba(14,30,60,0.12);
       }
 
-      .page-header h1 {
-        margin: 0 0 0.5rem;
-        font-size: clamp(2rem, 4vw, 3rem);
-        line-height: 1.1;
-      }
+      .page-header h1 { margin: 0 0 0.25rem; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.05; letter-spacing: -0.02em; }
 
-      .page-header p {
-        max-width: 42rem;
-        margin: 0;
-        color: #cbd3e5;
-        font-size: 1.05rem;
-      }
+      .page-header p { max-width: 48rem; margin: 0; color: rgba(255,255,255,0.9); font-size: 1.05rem; }
 
       .new-task-button {
-        margin-top: 1.25rem;
-        padding: 0.65rem 1rem;
-        border: 1px solid #ffffff;
-        border-radius: 0.5rem;
-        color: #25304a;
-        background: #ffffff;
+        margin-top: 0.5rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.18);
         font-weight: 700;
         cursor: pointer;
+        align-self: flex-start;
+        transition: all .18s ease;
+        backdrop-filter: blur(6px);
       }
+      .new-task-button:hover { transform: translateY(-2px); background: rgba(255,255,255,0.18); box-shadow: 0 8px 20px rgba(37,48,74,0.08); }
 
       .board {
         display: grid;
-        grid-template-columns: repeat(3, minmax(16rem, 1fr));
-        gap: 1rem;
-        width: min(90rem, 100%);
+        grid-template-columns: repeat(3, minmax(18rem, 1fr));
+        gap: calc(var(--gap) * 1.1);
+        width: min(96rem, 100%);
         margin: 0 auto;
         padding: 2rem clamp(1rem, 4vw, 3rem);
         overflow-x: auto;
@@ -71,336 +69,98 @@
       .kanban-column {
         min-height: 28rem;
         padding: 1rem;
-        border: 1px solid #dde2ed;
-        border-radius: 0.875rem;
-        background: #e9edf5;
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #fbfdff, #f4f7fb);
+        border: 1px solid rgba(99,110,129,0.06);
+        box-shadow: var(--card-shadow);
+        display:flex; flex-direction:column; gap:0.75rem;
       }
 
-      .column-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
+      .column-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
 
-      .column-title {
-        margin: 0;
-        font-size: 1.1rem;
-      }
+      .column-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); }
 
-      .task-count {
-        min-width: 1.75rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: 999px;
-        color: #505b72;
-        background: #ffffff;
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-align: center;
-      }
+      .task-count { min-width: 2rem; padding: 0.2rem 0.6rem; border-radius: 999px; color: var(--muted); background: rgba(15,23,42,0.04); font-size: 0.8rem; font-weight:700; text-align:center; }
 
-      .task-list {
-        display: grid;
-        gap: 0.875rem;
-      }
+      .task-list { display: grid; gap: 0.9rem; }
 
       .task-card {
         padding: 1rem;
-        border: 1px solid #d7dce7;
-        border-radius: 0.75rem;
-        background: #ffffff;
-        box-shadow: 0 0.25rem 0.75rem rgb(37 48 74 / 8%);
+        border-radius: calc(var(--radius) - 0.15rem);
+        background: var(--surface);
+        box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+        transition: transform .16s ease, box-shadow .16s ease;
+        border: none;
       }
+      .task-card:hover { transform: translateY(-6px); box-shadow: 0 14px 40px rgba(15,23,42,0.10); }
 
-      .task-card[draggable="true"] {
-        cursor: grab;
-      }
+      .task-card[draggable="true"] { cursor: grab; }
+      .task-card.is-dragging { opacity: 0.6; transform: scale(.995); }
 
-      .task-card.is-dragging {
-        opacity: 0.5;
-      }
+      .kanban-column.is-drop-target { border-color: var(--accent); background: linear-gradient(180deg,#eaf0ff,#eef4ff); }
 
-      .kanban-column.is-drop-target {
-        border-color: #6a82c4;
-        background: #dfe6f7;
-      }
+      .task-card h3 { margin: 0; font-size: 1rem; color: var(--text); }
 
-      .task-card h3 {
-        margin: 0;
-        font-size: 1rem;
-      }
+      .task-description { margin: 0.5rem 0 0.9rem; color: #5f687a; font-size: 0.92rem; line-height: 1.5; }
 
-      .task-description {
-        margin: 0.6rem 0 1rem;
-        color: #5f687a;
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
+      .task-meta { display:flex; flex-wrap:wrap; align-items:center; gap:0.6rem; margin-bottom:0.6rem; }
 
-      .task-meta {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-      }
+      .priority { display:inline-flex; padding:0.28rem 0.6rem; border-radius:999px; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.02em; }
 
-      .priority {
-        display: inline-flex;
-        padding: 0.25rem 0.55rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-      }
+      .priority-high { color:#7f1d1d; background:#ffe6df; }
+      .priority-medium { color:#6b4a04; background:#fff7db; }
+      .priority-low { color:#064e3b; background:#ddf7e8; }
 
-      .priority-high {
-        color: #9a3412;
-        background: #ffedd5;
-      }
-
-      .priority-medium {
-        color: #854d0e;
-        background: #fef9c3;
-      }
-
-      .priority-low {
-        color: #166534;
-        background: #dcfce7;
-      }
-
-      .assignee {
-        color: #697286;
-        font-size: 0.82rem;
-      }
+      .assignee { color: var(--muted); font-size: 0.82rem; }
 
       .edit-button {
-        width: 100%;
-        padding: 0.55rem 0.8rem;
-        border: 1px solid #c4cada;
-        border-radius: 0.5rem;
-        color: #25304a;
-        background: #ffffff;
-        font-weight: 650;
-        cursor: pointer;
+        width: 100%; padding: 0.55rem 0.8rem; border-radius: 8px; color: var(--primary-600); background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.12); font-weight:650; cursor:pointer; transition: all .12s ease;
       }
+      .edit-button:hover { background: rgba(59,130,246,0.1); transform: translateY(-2px); }
 
-      .edit-button:hover {
-        border-color: #6a7691;
-        background: #f7f8fb;
-      }
+      .board-status { display:flex; align-items:center; justify-content:space-between; gap:1rem; width: min(84rem, calc(100% - 2rem)); margin:2rem auto 0; padding:0.9rem 1rem; border-radius:12px; background: var(--surface); border:1px solid rgba(99,110,129,0.06); box-shadow:0 6px 20px rgba(15,23,42,0.04); }
+      .board-status[hidden] { display: none; }
+      .board-status[data-state="error"] { border-color: #fecaca; color: #991b1b; background: #fff6f6; }
 
-      .edit-button:focus-visible {
-        outline: 3px solid #9fb9ff;
-        outline-offset: 2px;
-      }
+      .status-message { margin:0; color: var(--muted); }
 
-      .board-status {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        width: min(84rem, calc(100% - 2rem));
-        margin: 2rem auto 0;
-        padding: 0.9rem 1rem;
-        border: 1px solid #cdd5e4;
-        border-radius: 0.75rem;
-        background: #ffffff;
-      }
+      .retry-button { padding:0.45rem 0.7rem; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; font-weight:700; cursor:pointer; }
 
-      .board-status[hidden] {
-        display: none;
-      }
+      .empty-column { margin:0; padding:1rem; border:1px dashed rgba(99,110,129,0.12); border-radius:8px; color: var(--muted); font-size:0.88rem; text-align:center; background:transparent; }
 
-      .board-status[data-state="error"] {
-        border-color: #fecaca;
-        color: #991b1b;
-        background: #fef2f2;
-      }
+      body.modal-open { overflow: hidden; }
 
-      .status-message {
-        margin: 0;
-      }
+      .modal-overlay { position: fixed; z-index: 40; inset:0; display:grid; place-items:center; padding:1rem; background: linear-gradient(180deg, rgba(7,10,25,0.6), rgba(7,10,25,0.5)); backdrop-filter: blur(6px); }
+      .modal-overlay[hidden] { display: none; }
 
-      .retry-button {
-        padding: 0.5rem 0.8rem;
-        border: 1px solid currentColor;
-        border-radius: 0.5rem;
-        color: inherit;
-        background: transparent;
-        font-weight: 700;
-        cursor: pointer;
-      }
+      .task-modal { width: min(40rem,100%); max-height: calc(100vh - 2rem); overflow-y: auto; border-radius: 14px; background: var(--surface); box-shadow: 0 20px 60px rgba(2,6,23,0.45); }
 
-      .empty-column {
-        margin: 0;
-        padding: 1rem;
-        border: 1px dashed #bdc5d5;
-        border-radius: 0.65rem;
-        color: #697286;
-        font-size: 0.88rem;
-        text-align: center;
-      }
+      .modal-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.25rem 1.5rem; border-bottom: 1px solid rgba(99,110,129,0.06); }
 
-      body.modal-open {
-        overflow: hidden;
-      }
+      .modal-close { padding:0.35rem 0.6rem; border:0; color:var(--muted); background:transparent; font-size:1.25rem; cursor:pointer; }
 
-      .modal-overlay {
-        position: fixed;
-        z-index: 10;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        padding: 1rem;
-        background: rgb(23 32 51 / 65%);
-      }
+      .task-form { display:grid; gap:1rem; padding:1.5rem; }
 
-      .modal-overlay[hidden] {
-        display: none;
-      }
+      .form-field label { font-size:0.9rem; font-weight:700; color:var(--text); }
 
-      .task-modal {
-        width: min(36rem, 100%);
-        max-height: calc(100vh - 2rem);
-        overflow-y: auto;
-        border-radius: 0.875rem;
-        background: #ffffff;
-        box-shadow: 0 1rem 3rem rgb(23 32 51 / 25%);
-      }
+      .form-field input, .form-field textarea, .form-field select { width:100%; padding:0.65rem 0.75rem; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background: rgba(250,252,255,0.9); color:var(--text); font:inherit; }
+      .form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color: var(--accent); outline: none; box-shadow: 0 8px 24px rgba(106,130,196,0.12); }
 
-      .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #dde2ed;
-      }
+      .form-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:1rem; }
 
-      .modal-header h2 {
-        margin: 0;
-        font-size: 1.3rem;
-      }
+      .field-error { min-height:1.1rem; color: var(--danger); font-size:0.82rem; }
 
-      .modal-close {
-        padding: 0.25rem 0.55rem;
-        border: 0;
-        color: #505b72;
-        background: transparent;
-        font-size: 1.5rem;
-        cursor: pointer;
-      }
+      .form-error { margin:0; padding:0.75rem; border-radius:8px; color:#991b1b; background:#fff6f6; font-size:0.9rem; border:1px solid #fee2e2; }
+      .form-error[hidden]{ display:none; }
 
-      .task-form {
-        display: grid;
-        gap: 1rem;
-        padding: 1.5rem;
-      }
+      .form-actions { display:flex; justify-content:flex-end; gap:0.75rem; padding-top:0.25rem; }
 
-      .form-field {
-        display: grid;
-        gap: 0.4rem;
-      }
+      .cancel-button, .save-button { padding:0.6rem 0.9rem; border-radius:8px; font-weight:700; cursor:pointer; }
+      .cancel-button { border:1px solid rgba(15,23,42,0.06); color:var(--text); background:transparent; }
+      .save-button { border:0; color:#fff; background: linear-gradient(90deg, var(--primary), var(--primary-600)); box-shadow: 0 10px 30px rgba(59,130,246,0.12); }
 
-      .form-field label {
-        font-size: 0.9rem;
-        font-weight: 700;
-      }
-
-      .form-field input,
-      .form-field textarea,
-      .form-field select {
-        width: 100%;
-        padding: 0.65rem 0.75rem;
-        border: 1px solid #c4cada;
-        border-radius: 0.5rem;
-        color: #172033;
-        background: #ffffff;
-        font: inherit;
-      }
-
-      .form-field textarea {
-        min-height: 6rem;
-        resize: vertical;
-      }
-
-      .form-field input:focus,
-      .form-field textarea:focus,
-      .form-field select:focus {
-        border-color: #6a82c4;
-        outline: 3px solid #dbe5ff;
-      }
-
-      .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
-      }
-
-      .field-error {
-        min-height: 1.1rem;
-        color: #b91c1c;
-        font-size: 0.82rem;
-      }
-
-      .form-error {
-        margin: 0;
-        padding: 0.75rem;
-        border: 1px solid #fecaca;
-        border-radius: 0.5rem;
-        color: #991b1b;
-        background: #fef2f2;
-        font-size: 0.9rem;
-      }
-
-      .form-error[hidden] {
-        display: none;
-      }
-
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        padding-top: 0.25rem;
-      }
-
-      .cancel-button,
-      .save-button {
-        padding: 0.6rem 0.9rem;
-        border-radius: 0.5rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .cancel-button {
-        border: 1px solid #c4cada;
-        color: #25304a;
-        background: #ffffff;
-      }
-
-      .save-button {
-        border: 1px solid #25304a;
-        color: #ffffff;
-        background: #25304a;
-      }
-
-      .save-button:disabled {
-        cursor: wait;
-        opacity: 0.65;
-      }
-
-      @media (max-width: 56rem) {
-        .board {
-          grid-template-columns: repeat(3, minmax(17rem, 1fr));
-        }
-      }
-
-      @media (max-width: 32rem) {
-        .form-grid {
-          grid-template-columns: 1fr;
-        }
-      }
+      @media (max-width: 56rem) { .board { grid-template-columns: repeat(3, minmax(16rem, 1fr)); padding: 1.5rem; } }
+      @media (max-width: 40rem) { .board { grid-template-columns: 1fr; gap: 0.75rem; } .form-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
@@ -957,19 +717,43 @@
 
       newTaskButton.addEventListener("click", () => openTaskModal());
       taskForm.addEventListener("submit", submitTaskForm);
-      taskForm
-        .querySelector(".cancel-button")
-        .addEventListener("click", closeTaskModal);
-      taskModal
-        .querySelector(".modal-close")
-        .addEventListener("click", closeTaskModal);
 
+      // Wire up cancel button (defensive)
+      const cancelBtn = taskForm.querySelector(".cancel-button");
+      if (cancelBtn) {
+        cancelBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          closeTaskModal();
+        });
+      } else {
+        console.warn("Cancel button not found in task form");
+      }
+
+      // Wire up modal close (X) button (defensive)
+      const modalCloseBtn = taskModal.querySelector(".modal-close");
+      if (modalCloseBtn) {
+        modalCloseBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          closeTaskModal();
+        });
+      } else {
+        console.warn("Modal close button not found");
+      }
+
+      // Prevent clicks inside the dialog from closing the overlay
+      const dialog = taskModal.querySelector(".task-modal");
+      if (dialog) {
+        dialog.addEventListener("click", (e) => e.stopPropagation());
+      }
+
+      // Clicking the overlay closes the modal
       taskModal.addEventListener("click", (event) => {
         if (event.target === taskModal) {
           closeTaskModal();
         }
       });
 
+      // Close on Escape
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && !taskModal.hidden) {
           closeTaskModal();
