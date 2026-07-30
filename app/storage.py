@@ -14,6 +14,37 @@ from app.models import (
 _tasks: dict[str, TaskResponse] = {}
 
 
+def _matches_task_filters(
+    task: TaskResponse,
+    *,
+    normalized_search: str,
+    status: Optional[TaskStatus],
+    priority: Optional[TaskPriority],
+    normalized_assignee: str,
+    due_date: Optional[date],
+) -> bool:
+    search_matches = (
+        not normalized_search
+        or normalized_search in task.title.casefold()
+        or normalized_search in task.description.casefold()
+    )
+    assignee_matches = (
+        not normalized_assignee
+        or (
+            task.assignee is not None
+            and task.assignee.casefold() == normalized_assignee
+        )
+    )
+
+    return (
+        search_matches
+        and (status is None or task.status == status)
+        and (priority is None or task.priority == priority)
+        and assignee_matches
+        and (due_date is None or task.due_date == due_date)
+    )
+
+
 def add_task(payload: TaskCreate) -> TaskResponse:
     now = datetime.now(timezone.utc)
     task = TaskResponse(
@@ -44,21 +75,14 @@ def get_all_tasks(
     return [
         task
         for task in _tasks.values()
-        if (
-            not normalized_search
-            or normalized_search in task.title.casefold()
-            or normalized_search in task.description.casefold()
+        if _matches_task_filters(
+            task,
+            normalized_search=normalized_search,
+            status=status,
+            priority=priority,
+            normalized_assignee=normalized_assignee,
+            due_date=due_date,
         )
-        and (status is None or task.status == status)
-        and (priority is None or task.priority == priority)
-        and (
-            not normalized_assignee
-            or (
-                task.assignee is not None
-                and task.assignee.casefold() == normalized_assignee
-            )
-        )
-        and (due_date is None or task.due_date == due_date)
     ]
 
 
