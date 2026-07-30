@@ -101,6 +101,144 @@ def test_list_tasks_filter_by_priority_returns_only_matches(client):
     assert tasks[0]["priority"] == "High"
 
 
+def test_list_tasks_searches_title_and_description_case_insensitively(client):
+    title_match = client.post(
+        "/tasks",
+        json={"title": "Write release notes"},
+    ).json()
+    description_match = client.post(
+        "/tasks",
+        json={
+            "title": "Prepare announcement",
+            "description": "Summarize the RELEASE changes",
+        },
+    ).json()
+    client.post("/tasks", json={"title": "Unrelated task"})
+
+    response = client.get("/tasks", params={"search": "release"})
+
+    assert response.status_code == 200
+    task_ids = {task["id"] for task in response.json()}
+    assert task_ids == {title_match["id"], description_match["id"]}
+
+
+def test_list_tasks_search_no_match_returns_200_and_empty_list(client, created_task):
+    response = client.get("/tasks", params={"search": "missing text"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_tasks_whitespace_search_is_ignored(client, created_task):
+    response = client.get("/tasks", params={"search": "   "})
+
+    assert response.status_code == 200
+    assert response.json() == [created_task]
+
+
+def test_list_tasks_filter_by_assignee_case_insensitively(client):
+    sara_task = client.post(
+        "/tasks",
+        json={"title": "Sara task", "assignee": "Sara"},
+    ).json()
+    client.post(
+        "/tasks",
+        json={"title": "Alex task", "assignee": "Alex"},
+    )
+    client.post("/tasks", json={"title": "Unassigned task"})
+
+    response = client.get("/tasks", params={"assignee": "sara"})
+
+    assert response.status_code == 200
+    assert [task["id"] for task in response.json()] == [sara_task["id"]]
+
+
+def test_list_tasks_filter_by_due_date_returns_exact_matches(client):
+    matching_task = client.post(
+        "/tasks",
+        json={"title": "Due task", "due_date": "2026-08-15"},
+    ).json()
+    client.post(
+        "/tasks",
+        json={"title": "Different date", "due_date": "2026-08-16"},
+    )
+    client.post("/tasks", json={"title": "No due date"})
+
+    response = client.get("/tasks", params={"due_date": "2026-08-15"})
+
+    assert response.status_code == 200
+    assert [task["id"] for task in response.json()] == [matching_task["id"]]
+
+
+def test_list_tasks_combines_all_filters_with_and_behavior(client):
+    matching_task = client.post(
+        "/tasks",
+        json={
+            "title": "Release checklist",
+            "description": "Prepare the launch",
+            "status": "InProgress",
+            "priority": "High",
+            "assignee": "Sara",
+            "due_date": "2026-08-15",
+        },
+    ).json()
+    client.post(
+        "/tasks",
+        json={
+            "title": "Release checklist with wrong priority",
+            "status": "InProgress",
+            "priority": "Low",
+            "assignee": "Sara",
+            "due_date": "2026-08-15",
+        },
+    )
+    client.post(
+        "/tasks",
+        json={
+            "title": "Unrelated high-priority task",
+            "status": "InProgress",
+            "priority": "High",
+            "assignee": "Sara",
+            "due_date": "2026-08-15",
+        },
+    )
+
+    response = client.get(
+        "/tasks",
+        params={
+            "search": "release",
+            "status": "InProgress",
+            "priority": "High",
+            "assignee": "sara",
+            "due_date": "2026-08-15",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [task["id"] for task in response.json()] == [matching_task["id"]]
+
+
+def test_list_tasks_invalid_status_returns_422(client):
+    response = client.get("/tasks", params={"status": "Blocked"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"][-1] == "status"
+
+
+def test_list_tasks_invalid_priority_returns_422(client):
+    response = client.get("/tasks", params={"priority": "Urgent"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"][-1] == "priority"
+
+
+def test_list_tasks_invalid_due_date_returns_422(client):
+    response = client.get("/tasks", params={"due_date": "not-a-date"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"][-1] == "due_date"
+
+
 def test_get_task_by_id_returns_task(client, created_task):
     response = client.get(f"/tasks/{created_task['id']}")
     assert response.status_code == 200

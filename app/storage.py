@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 from uuid import uuid4
 
@@ -32,14 +32,33 @@ def add_task(payload: TaskCreate) -> TaskResponse:
 
 
 def get_all_tasks(
+    search: Optional[str] = None,
     status: Optional[TaskStatus] = None,
     priority: Optional[TaskPriority] = None,
+    assignee: Optional[str] = None,
+    due_date: Optional[date] = None,
 ) -> list[TaskResponse]:
+    normalized_search = search.strip().casefold() if search else ""
+    normalized_assignee = assignee.strip().casefold() if assignee else ""
+
     return [
         task
         for task in _tasks.values()
-        if (status is None or task.status == status)
+        if (
+            not normalized_search
+            or normalized_search in task.title.casefold()
+            or normalized_search in task.description.casefold()
+        )
+        and (status is None or task.status == status)
         and (priority is None or task.priority == priority)
+        and (
+            not normalized_assignee
+            or (
+                task.assignee is not None
+                and task.assignee.casefold() == normalized_assignee
+            )
+        )
+        and (due_date is None or task.due_date == due_date)
     ]
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,10 +46,19 @@ def create_task(payload: TaskCreate) -> TaskResponse:
 
 @app.get("/tasks", response_model=list[TaskResponse], tags=["tasks"])
 def list_tasks(
+    search: str | None = None,
     status: TaskStatus | None = None,
     priority: TaskPriority | None = None,
+    assignee: str | None = None,
+    due_date: date | None = None,
 ) -> list[TaskResponse]:
-    return storage.get_all_tasks(status=status, priority=priority)
+    return storage.get_all_tasks(
+        search=search,
+        status=status,
+        priority=priority,
+        assignee=assignee,
+        due_date=due_date,
+    )
 
 
 @app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
