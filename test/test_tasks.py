@@ -18,8 +18,30 @@ def test_create_task_valid_returns_201_with_full_body(client):
     assert body["status"] == "ToDo"
     assert body["priority"] == "High"
     assert body["assignee"] == "Sara"
+    assert body["due_date"] is None
     assert body["created_at"]
     assert body["updated_at"]
+
+
+def test_create_task_with_due_date_returns_201(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Prepare release", "due_date": "2026-08-15"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["due_date"] == "2026-08-15"
+
+
+def test_create_task_invalid_due_date_returns_422(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Invalid deadline", "due_date": "not-a-date"},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail[0]["loc"][-1] == "due_date"
 
 
 def test_create_task_missing_title_returns_422(client):
@@ -104,6 +126,34 @@ def test_patch_partial_update_keeps_other_fields(client, created_task):
     assert body["priority"] == created_task["priority"]
     assert body["assignee"] == created_task["assignee"]
     assert body["created_at"] == created_task["created_at"]
+
+
+def test_patch_due_date_updates_task(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"due_date": "2026-09-01"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] == "2026-09-01"
+    assert response.json()["title"] == created_task["title"]
+
+
+def test_patch_null_due_date_removes_task_due_date(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with deadline", "due_date": "2026-09-01"},
+    )
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"due_date": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["due_date"] is None
 
 
 def test_patch_not_found_returns_404(client):
