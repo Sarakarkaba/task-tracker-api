@@ -122,6 +122,40 @@ def test_patch_valid_transition_todo_to_inprogress_returns_200(
     assert response.json()["status"] == "InProgress"
 
 
+def test_patch_valid_transition_inprogress_to_done_returns_200(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Complete drag-and-drop", "status": "InProgress"},
+    )
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"status": "Done"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "Done"
+
+
+def test_patch_valid_transition_done_to_inprogress_returns_200(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Reopen completed task", "status": "Done"},
+    )
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"status": "InProgress"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "InProgress"
+
+
 def test_patch_invalid_transition_todo_to_done_returns_422(client, created_task):
     response = client.patch(
         f"/tasks/{created_task['id']}", json={"status": "Done"}
@@ -129,6 +163,25 @@ def test_patch_invalid_transition_todo_to_done_returns_422(client, created_task)
     assert response.status_code == 422
     assert response.json()["detail"].startswith(
         "Invalid status transition from ToDo to Done."
+    )
+
+
+def test_patch_invalid_transition_inprogress_to_todo_returns_422(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Keep task moving forward", "status": "InProgress"},
+    )
+    assert create_response.status_code == 201
+    task_id = create_response.json()["id"]
+
+    response = client.patch(
+        f"/tasks/{task_id}",
+        json={"status": "ToDo"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith(
+        "Invalid status transition from InProgress to ToDo."
     )
 
 
@@ -140,6 +193,41 @@ def test_patch_same_status_returns_422(client, created_task):
     assert response.json()["detail"].startswith(
         "Invalid status transition from ToDo to ToDo."
     )
+
+
+def test_patch_blank_title_returns_422(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"title": "   "},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail[0]["loc"][-1] == "title"
+    assert "title must not be blank" in detail[0]["msg"]
+
+
+def test_patch_invalid_priority_returns_422(client, created_task):
+    response = client.patch(
+        f"/tasks/{created_task['id']}",
+        json={"priority": "Urgent"},
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail[0]["loc"][-1] == "priority"
+    assert "Low" in detail[0]["msg"]
+    assert "Medium" in detail[0]["msg"]
+    assert "High" in detail[0]["msg"]
+
+
+def test_patch_missing_body_returns_422(client, created_task):
+    response = client.patch(f"/tasks/{created_task['id']}")
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail[0]["loc"] == ["body"]
+    assert "required" in detail[0]["msg"].lower()
 
 
 def test_delete_existing_returns_204_no_body(client, created_task):
