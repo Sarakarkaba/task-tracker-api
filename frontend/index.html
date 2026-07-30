@@ -139,6 +139,46 @@
       }
       .edit-button:hover { background: rgba(59,130,246,0.1); transform: translateY(-2px); }
 
+      .filter-bar {
+        display: grid;
+        grid-template-columns: minmax(14rem, 2fr) repeat(4, minmax(8rem, 1fr)) auto;
+        gap: 0.75rem;
+        align-items: end;
+        width: min(90rem, calc(100% - 2rem));
+        margin: 2rem auto 0;
+        padding: 1rem;
+        border: 1px solid rgba(99,110,129,0.06);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: 0 6px 20px rgba(15,23,42,0.04);
+      }
+
+      .filter-field { display: grid; gap: 0.35rem; }
+      .filter-field label { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+      .filter-field input,
+      .filter-field select {
+        width: 100%;
+        min-height: 2.5rem;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid rgba(15,23,42,0.1);
+        border-radius: 8px;
+        color: var(--text);
+        background: #fff;
+        font: inherit;
+      }
+
+      .filter-actions { display: flex; gap: 0.5rem; }
+      .apply-filters-button,
+      .clear-filters-button {
+        min-height: 2.5rem;
+        padding: 0.55rem 0.8rem;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .apply-filters-button { border: 0; color: #fff; background: var(--primary-600); }
+      .clear-filters-button { border: 1px solid rgba(15,23,42,0.1); color: var(--text); background: #fff; }
+
       .board-status { display:flex; align-items:center; justify-content:space-between; gap:1rem; width: min(84rem, calc(100% - 2rem)); margin:2rem auto 0; padding:0.9rem 1rem; border-radius:12px; background: var(--surface); border:1px solid rgba(99,110,129,0.06); box-shadow:0 6px 20px rgba(15,23,42,0.04); }
       .board-status[hidden] { display: none; }
       .board-status[data-state="error"] { border-color: #fecaca; color: #991b1b; background: #fff6f6; }
@@ -180,8 +220,9 @@
       .cancel-button { border:1px solid rgba(15,23,42,0.06); color:var(--text); background:transparent; }
       .save-button { border:0; color:#fff; background: linear-gradient(90deg, var(--primary), var(--primary-600)); box-shadow: 0 10px 30px rgba(59,130,246,0.12); }
 
+      @media (max-width: 70rem) { .filter-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
       @media (max-width: 56rem) { .board { grid-template-columns: repeat(3, minmax(16rem, 1fr)); padding: 1.5rem; } }
-      @media (max-width: 40rem) { .board { grid-template-columns: 1fr; gap: 0.75rem; } .form-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 40rem) { .board { grid-template-columns: 1fr; gap: 0.75rem; } .filter-bar { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } }
     </style>
   </head>
   <body>
@@ -196,6 +237,55 @@
         Show overdue only
       </label>
     </header>
+
+    <form class="filter-bar" id="task-filters">
+      <div class="filter-field">
+        <label for="filter-search">Search</label>
+        <input
+          id="filter-search"
+          name="search"
+          type="search"
+          placeholder="Search title or description"
+        >
+      </div>
+
+      <div class="filter-field">
+        <label for="filter-status">Status</label>
+        <select id="filter-status" name="status">
+          <option value="">All statuses</option>
+          <option value="ToDo">To Do</option>
+          <option value="InProgress">In Progress</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filter-priority">Priority</label>
+        <select id="filter-priority" name="priority">
+          <option value="">All priorities</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filter-assignee">Assignee</label>
+        <input id="filter-assignee" name="assignee" type="text" placeholder="Any assignee">
+      </div>
+
+      <div class="filter-field">
+        <label for="filter-due-date">Due date</label>
+        <input id="filter-due-date" name="due_date" type="date">
+      </div>
+
+      <div class="filter-actions">
+        <button class="apply-filters-button" type="submit">Apply</button>
+        <button class="clear-filters-button" id="clear-filters" type="button">
+          Clear
+        </button>
+      </div>
+    </form>
 
     <section
       class="board-status"
@@ -366,6 +456,13 @@
       const retryButton = boardStatus.querySelector(".retry-button");
       const newTaskButton = document.querySelector("#new-task-button");
       const overdueFilter = document.querySelector("#overdue-filter");
+      const taskFilters = document.querySelector("#task-filters");
+      const filterSearchInput = taskFilters.elements.namedItem("search");
+      const filterStatusInput = taskFilters.elements.namedItem("status");
+      const filterPriorityInput = taskFilters.elements.namedItem("priority");
+      const filterAssigneeInput = taskFilters.elements.namedItem("assignee");
+      const filterDueDateInput = taskFilters.elements.namedItem("due_date");
+      const clearFiltersButton = document.querySelector("#clear-filters");
       const taskModal = document.querySelector("#task-modal");
       const taskModalTitle = document.querySelector("#task-modal-title");
       const taskForm = document.querySelector("#task-form");
@@ -405,6 +502,29 @@
         placeholder.className = "empty-column";
         placeholder.textContent = `No tasks in ${STATUS_LABELS[status]}.`;
         return placeholder;
+      }
+
+      function getTaskFilterParams() {
+        const params = new URLSearchParams();
+        const filterValues = {
+          search: filterSearchInput.value.trim(),
+          status: filterStatusInput.value,
+          priority: filterPriorityInput.value,
+          assignee: filterAssigneeInput.value.trim(),
+          due_date: filterDueDateInput.value,
+        };
+
+        Object.entries(filterValues).forEach(([name, value]) => {
+          if (value) {
+            params.set(name, value);
+          }
+        });
+
+        return params;
+      }
+
+      function hasActiveTaskFilters() {
+        return getTaskFilterParams().toString() !== "";
       }
 
       function getLocalDateString() {
@@ -731,6 +851,11 @@
         if (!response.ok) {
           const message = await getServerErrorMessage(response);
           revertTaskStatus(task, previousStatus, message);
+          return;
+        }
+
+        if (hasActiveTaskFilters()) {
+          fetchTasks();
         }
       }
 
@@ -851,11 +976,25 @@
         renderBoard(tasks);
       });
 
+      taskFilters.addEventListener("submit", (event) => {
+        event.preventDefault();
+        fetchTasks();
+      });
+
+      clearFiltersButton.addEventListener("click", () => {
+        taskFilters.reset();
+        overdueFilter.checked = false;
+        fetchTasks();
+      });
+
       async function fetchTasks() {
         setBoardState("loading");
 
         try {
-          const response = await fetch(`${API_BASE_URL}/tasks`);
+          const queryString = getTaskFilterParams().toString();
+          const requestUrl =
+            `${API_BASE_URL}/tasks${queryString ? `?${queryString}` : ""}`;
+          const response = await fetch(requestUrl);
 
           if (!response.ok) {
             throw new Error(`Failed to load tasks (${response.status})`);
@@ -869,7 +1008,12 @@
 
           tasks = loadedTasks;
           renderBoard(tasks);
-          setBoardState(tasks.length === 0 ? "empty" : "ready");
+          setBoardState(
+            tasks.length === 0 ? "empty" : "ready",
+            tasks.length === 0 && queryString
+              ? "No tasks match the active search and filters."
+              : "",
+          );
         } catch (error) {
           tasks = [];
           renderBoard(tasks);
