@@ -30,6 +30,18 @@ class TaskCreate(BaseModel):
     @field_validator("title")
     @classmethod
     def validate_title(cls, value: str) -> str:
+        """Normalize and validate a new task title.
+
+        Args:
+            value: The title supplied for the new task.
+
+        Returns:
+            The title with leading and trailing whitespace removed.
+
+        Raises:
+            ValueError: If the stripped title is empty or longer than 200
+                characters.
+        """
         value = value.strip()
         if not value:
             raise ValueError("title must not be blank")
@@ -51,6 +63,19 @@ class TaskUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def validate_title(cls, value: Optional[str]) -> Optional[str]:
+        """Normalize and validate an updated task title.
+
+        Args:
+            value: The replacement title, or ``None`` when no title is
+                supplied.
+
+        Returns:
+            The stripped title, or ``None`` when the input is ``None``.
+
+        Raises:
+            ValueError: If a supplied title is blank after stripping or longer
+                than 200 characters.
+        """
         if value is None:
             return None
 

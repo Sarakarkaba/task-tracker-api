@@ -46,6 +46,15 @@ def _matches_task_filters(
 
 
 def add_task(payload: TaskCreate) -> TaskResponse:
+    """Create a task and add it to the in-memory store.
+
+    Args:
+        payload: The validated fields for the new task.
+
+    Returns:
+        The stored task with a generated UUID and UTC creation and update
+        timestamps.
+    """
     now = datetime.now(timezone.utc)
     task = TaskResponse(
         id=str(uuid4()),
@@ -69,6 +78,23 @@ def get_all_tasks(
     assignee: Optional[str] = None,
     due_date: Optional[date] = None,
 ) -> list[TaskResponse]:
+    """Return tasks that match the supplied filters.
+
+    Text search and assignee comparisons are case-insensitive. Search matches
+    substrings in task titles or descriptions, while assignee matching is
+    exact. When multiple filters are supplied, a task must match all of them.
+
+    Args:
+        search: Optional text to find in task titles or descriptions.
+        status: Optional exact task status.
+        priority: Optional exact task priority.
+        assignee: Optional exact assignee name.
+        due_date: Optional exact due date.
+
+    Returns:
+        Tasks matching every supplied filter, in the in-memory store's
+        iteration order.
+    """
     normalized_search = search.strip().casefold() if search else ""
     normalized_assignee = assignee.strip().casefold() if assignee else ""
 
@@ -87,6 +113,14 @@ def get_all_tasks(
 
 
 def get_task_by_id(task_id: str) -> Optional[TaskResponse]:
+    """Retrieve a task from the in-memory store.
+
+    Args:
+        task_id: The generated ID of the requested task.
+
+    Returns:
+        The matching task, or ``None`` if the ID is not present.
+    """
     return _tasks.get(task_id)
 
 
@@ -94,6 +128,20 @@ def update_task(
     task_id: str,
     payload: TaskUpdate,
 ) -> Optional[TaskResponse]:
+    """Apply supplied field updates to a stored task.
+
+    An explicitly supplied ``None`` description is stored as an empty string.
+    If no field value changes, the existing task is returned without changing
+    its update timestamp.
+
+    Args:
+        task_id: The generated ID of the task to update.
+        payload: The validated fields that were supplied for the update.
+
+    Returns:
+        The updated task, the unchanged task when values are identical, or
+        ``None`` if the ID is not present.
+    """
     current = _tasks.get(task_id)
     if current is None:
         return None
@@ -116,6 +164,14 @@ def update_task(
 
 
 def delete_task(task_id: str) -> bool:
+    """Delete a task from the in-memory store.
+
+    Args:
+        task_id: The generated ID of the task to delete.
+
+    Returns:
+        ``True`` if a task was removed; otherwise, ``False``.
+    """
     return _tasks.pop(task_id, None) is not None
 
 
