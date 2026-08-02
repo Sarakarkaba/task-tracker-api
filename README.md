@@ -15,6 +15,21 @@ The API supports:
 The frontend adds task editing, drag-and-drop status changes, due dates,
 overdue filtering, text search, and combined filters.
 
+## API behavior
+
+| Method | Route | Success | Errors |
+|---|---|---|---|
+| `GET` | `/health` | `200` with `status` and a UTC timestamp | None |
+| `POST` | `/tasks` | `201` with a `TaskResponse` body | `422` for request validation errors |
+| `GET` | `/tasks` | `200` with a list of tasks | `422` for invalid query parameters |
+| `GET` | `/tasks/{task_id}` | `200` with a `TaskResponse` body | `404` when the task does not exist |
+| `PATCH` | `/tasks/{task_id}` | `200` with the updated task | `404` when the task does not exist; `422` for request validation or an invalid status transition |
+| `DELETE` | `/tasks/{task_id}` | `204` with no response body | `404` when the task does not exist |
+
+FastAPI and Pydantic request-validation errors use HTTP `422` with a list in
+the response's `detail` field. Invalid status transitions also use HTTP `422`,
+but return a human-readable string in `detail`.
+
 ## Prerequisites
 
 - Python 3.11
