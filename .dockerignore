@@ -1,0 +1,38 @@
+# Secrets and local configuration
+.env
+.env.*
+
+# Version control
+.git
+.gitignore
+
+# Python environments and caches
+venv/
+.venv/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+htmlcov/
+
+# JavaScript dependencies
+node_modules/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS-generated files
+.DS_Store
+Thumbs.db
