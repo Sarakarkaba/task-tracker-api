@@ -195,7 +195,8 @@ publish a Docker image, or configure a production environment.
 
 ## Technical note
 
-See the
-[Mini Architecture Decision Record](docs/midcourse/mini-adr.md)
-for decisions about due dates, overdue filtering, search, and combined
-filters.
+- [In-Memory Task Storage](docs/decisions/in-memory-task-storage.md) explains
+  why the project uses process-local storage and records the alternatives,
+  trade-offs, consequences, and open questions.
+- [Mini Architecture Decision Record](docs/midcourse/mini-adr.md) records
+  decisions about due dates, overdue filtering, search, and combined filters.
